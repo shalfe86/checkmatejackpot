@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Button } from '../../../components/ui/button';
 import { formatCurrency } from '../../../lib/utils';
 import { Users, Trophy, DollarSign, Activity, AlertCircle, Loader2, Database } from 'lucide-react';
 import { Winner } from '../../../types';
@@ -60,26 +61,30 @@ export const AdminDashboard = () => {
 
   if (error) {
       const isTableMissing = error.includes('Could not find the table') || error.includes('does not exist');
+      const isSchemaIssue = error.includes('relationship') || error.includes('foreign key');
       
       return (
           <div className="p-8 text-center border border-destructive/20 bg-destructive/5 rounded-lg max-w-2xl mx-auto">
-              {isTableMissing ? (
+              {isTableMissing || isSchemaIssue ? (
                   <>
                      <Database className="w-12 h-12 text-destructive mx-auto mb-4" />
                      <h3 className="font-bold text-xl text-destructive mb-2">Database Setup Required</h3>
                      <p className="text-muted-foreground mb-4">
-                        The <code>winners</code> table was not found in your Supabase project. 
+                        {isTableMissing 
+                            ? "The required database tables were not found." 
+                            : "The database schema is missing required relationships."}
                      </p>
                      <div className="bg-background p-4 rounded text-left text-xs font-mono border border-border overflow-auto max-h-40 mb-4">
                         <p className="text-muted-foreground">// Please run the contents of <strong>supabase/schema.sql</strong> in your Supabase SQL Editor.</p>
                      </div>
-                     <p className="text-sm">After running the SQL, refresh this page.</p>
+                     <Button onClick={() => window.location.reload()} variant="outline">Reload Page</Button>
                   </>
               ) : (
                   <>
                     <AlertCircle className="w-8 h-8 text-destructive mx-auto mb-2" />
                     <h3 className="font-bold text-destructive">Error Loading Dashboard</h3>
-                    <p className="text-muted-foreground">{error}</p>
+                    <p className="text-muted-foreground mb-4">{error}</p>
+                    <Button onClick={() => window.location.reload()} variant="outline">Retry</Button>
                   </>
               )}
           </div>

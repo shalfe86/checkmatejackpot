@@ -7,7 +7,7 @@ import { Input } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
 import { WinnerDetailSheet } from '../../../components/admin/WinnerDetailSheet';
 import { formatCurrency } from '../../../lib/utils';
-import { Loader2, Search, Filter, Eye, AlertCircle } from 'lucide-react';
+import { Loader2, Search, Filter, Eye, AlertCircle, Database } from 'lucide-react';
 
 export const WinnersPage = () => {
   const [winners, setWinners] = useState<Winner[]>([]);
@@ -60,13 +60,29 @@ export const WinnersPage = () => {
   );
 
   if (error) {
+     const isSchemaIssue = error.includes('relationship') || error.includes('foreign key');
      return (
         <div className="space-y-6">
              <h1 className="text-3xl font-bold tracking-tight">Winners Management</h1>
-             <div className="p-8 text-center border border-destructive/20 bg-destructive/5 rounded-lg">
-                <AlertCircle className="w-8 h-8 text-destructive mx-auto mb-2" />
-                <h3 className="font-bold text-destructive">Error Loading Winners</h3>
-                <p className="text-muted-foreground mb-4">{error}</p>
+             <div className="p-8 text-center border border-destructive/20 bg-destructive/5 rounded-lg max-w-2xl mx-auto">
+                {isSchemaIssue ? (
+                    <>
+                        <Database className="w-12 h-12 text-destructive mx-auto mb-4" />
+                        <h3 className="font-bold text-xl text-destructive mb-2">Schema Update Required</h3>
+                        <p className="text-muted-foreground mb-4">
+                            The app cannot link Winners to Users because the Foreign Key relationship is missing or incorrect.
+                        </p>
+                        <div className="bg-background p-4 rounded text-left text-xs font-mono border border-border overflow-auto max-h-40 mb-4">
+                            <p className="text-muted-foreground">// Please run the updated <strong>supabase/schema.sql</strong> in your Supabase SQL Editor to fix the relationships.</p>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <AlertCircle className="w-8 h-8 text-destructive mx-auto mb-2" />
+                        <h3 className="font-bold text-destructive">Error Loading Winners</h3>
+                        <p className="text-muted-foreground mb-4">{error}</p>
+                    </>
+                )}
                 <Button onClick={fetchWinners} variant="outline">Retry</Button>
             </div>
         </div>
