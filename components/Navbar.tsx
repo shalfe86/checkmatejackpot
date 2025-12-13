@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Crown, LayoutDashboard, LogIn } from 'lucide-react';
+import { Crown, LayoutDashboard, LogIn, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Navbar = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
   const isDashboard = location.pathname === '/dashboard';
 
   return (
@@ -18,23 +20,34 @@ export const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {!isDashboard ? (
-             <Link to="/dashboard">
-              <Button variant="ghost" className="gap-2">
-                 <LayoutDashboard className="w-4 h-4" />
-                 Dashboard
+          {user ? (
+            <>
+              {!isDashboard && (
+                <Link to="/dashboard">
+                  <Button variant="ghost" className="gap-2">
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+              )}
+              {isDashboard && (
+                <Link to="/">
+                  <Button variant="ghost">Home</Button>
+                </Link>
+              )}
+              <Button onClick={() => signOut()} variant="outline" size="sm" className="gap-2 hidden sm:flex">
+                <LogOut className="w-4 h-4" />
+                Sign Out
               </Button>
-             </Link>
+            </>
           ) : (
-            <Link to="/">
-              <Button variant="ghost">Home</Button>
+             <Link to="/auth">
+              <Button variant="default" size="sm" className="gap-2">
+                <LogIn className="w-4 h-4" />
+                Sign In
+              </Button>
             </Link>
           )}
-
-          <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
-            <LogIn className="w-4 h-4" />
-            Sign In
-          </Button>
         </div>
       </div>
     </nav>

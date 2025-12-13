@@ -1,14 +1,26 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { JackpotCard } from '../components/JackpotCard';
-import { GameTier } from '../types';
+import { GameTier, JackpotInfo } from '../types';
 import { getJackpotInfo } from '../lib/jackpot/jackpotLogic';
-import { ArrowRight, PlayCircle } from 'lucide-react';
+import { ArrowRight, PlayCircle, Loader2 } from 'lucide-react';
 
 export const Home = () => {
   const navigate = useNavigate();
-  const jackpots = getJackpotInfo();
+  const [jackpots, setJackpots] = useState<JackpotInfo | null>(null);
+
+  useEffect(() => {
+    const fetchJackpots = async () => {
+        const info = await getJackpotInfo();
+        setJackpots(info);
+    };
+    fetchJackpots();
+    
+    // Optional: Poll for updates every 30 seconds
+    const interval = setInterval(fetchJackpots, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="flex flex-col gap-12 pb-12">
@@ -38,23 +50,31 @@ export const Home = () => {
       {/* Jackpots */}
       <section className="container mx-auto px-4 max-w-6xl">
         <div className="grid md:grid-cols-2 gap-8">
-            <JackpotCard
-                title="Starter Jackpot"
-                amount={jackpots.starter}
-                tier={GameTier.STARTER}
-                isCapped={jackpots.starter >= jackpots.starterCap}
-                entryFee="$1.00 or 1 Credit"
-                description="Perfect for beginners. Win up to $1,000 against a balanced AI."
-                eligibility="1 Win / Month / User"
-            />
-            <JackpotCard
-                title="World Jackpot"
-                amount={jackpots.world}
-                tier={GameTier.WORLD}
-                entryFee="$2.00 or 2 Credits"
-                description="The ultimate challenge. Uncapped jackpot grows with every game played."
-                eligibility="Unlimited Attempts"
-            />
+            {jackpots ? (
+                <>
+                <JackpotCard
+                    title="Starter Jackpot"
+                    amount={jackpots.starter}
+                    tier={GameTier.STARTER}
+                    isCapped={jackpots.starter >= jackpots.starterCap}
+                    entryFee="$1.00 or 1 Credit"
+                    description="Perfect for beginners. Win up to $1,000 against a balanced AI."
+                    eligibility="1 Win / Month / User"
+                />
+                <JackpotCard
+                    title="World Jackpot"
+                    amount={jackpots.world}
+                    tier={GameTier.WORLD}
+                    entryFee="$2.00 or 2 Credits"
+                    description="The ultimate challenge. Uncapped jackpot grows with every game played."
+                    eligibility="Unlimited Attempts"
+                />
+                </>
+            ) : (
+                <div className="col-span-2 flex justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+            )}
         </div>
       </section>
 
@@ -66,8 +86,8 @@ export const Home = () => {
                 <p className="text-sm text-muted-foreground">Our engines are calibrated for fair, exciting matches at every skill level.</p>
             </div>
             <div className="space-y-2">
-                <h3 className="font-bold text-lg">Instant Payouts</h3>
-                <p className="text-sm text-muted-foreground">Winnings are credited to your account immediately after game review.</p>
+                <h3 className="font-bold text-lg">Instant Payouts ($5k & Under)</h3>
+                <p className="text-sm text-muted-foreground">Winnings under $5,000 are credited to your account immediately after game review.</p>
             </div>
             <div className="space-y-2">
                 <h3 className="font-bold text-lg">Secure Platform</h3>

@@ -75,8 +75,25 @@
       body {
         @apply bg-background text-foreground font-sans antialiased;
       }
+      /* Chessground Theme Overrides for Dark Mode */
+      .cg-wrap {
+        border-radius: 0.5rem;
+      }
+      .cg-board {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+      /* Ensure piece images are loaded correctly if using default assets */
+      piece {
+        background-size: cover;
+      }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chessground Styles -->
+    <link rel="stylesheet" href="https://unpkg.com/chessground@9.1.1/assets/chessground.base.css">
+    <link rel="stylesheet" href="https://unpkg.com/chessground@9.1.1/assets/chessground.brown.css">
+    <link rel="stylesheet" href="https://unpkg.com/chessground@9.1.1/assets/chessground.cburnett.css">
+
   <script type="importmap">
 {
   "imports": {
@@ -88,7 +105,8 @@
     "clsx": "https://esm.sh/clsx@^2.1.1",
     "chess.js": "https://esm.sh/chess.js@^1.4.0",
     "tailwind-merge": "https://esm.sh/tailwind-merge@^3.4.0",
-    "react-chessboard": "https://esm.sh/react-chessboard@^5.8.6"
+    "chessground": "https://esm.sh/chessground@9.1.1",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3"
   }
 }
 </script>
