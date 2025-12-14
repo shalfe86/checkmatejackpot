@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Crown, LayoutDashboard, Users, Settings, Trophy, LogOut, User } from 'lucide-react';
+import { Crown, LayoutDashboard, Users, Settings, Trophy, LogOut, User, ClipboardList } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -33,6 +33,11 @@ export const AdminSidebar = () => {
          <Link to="/admin/users">
             <Button variant={isActive('/admin/users') ? 'secondary' : 'ghost'} className="w-full justify-start gap-3">
                 <Users className="w-4 h-4" /> Users
+            </Button>
+         </Link>
+         <Link to="/admin/audit">
+            <Button variant={isActive('/admin/audit') ? 'secondary' : 'ghost'} className="w-full justify-start gap-3">
+                <ClipboardList className="w-4 h-4" /> Audit Logs
             </Button>
          </Link>
          <Link to="/admin/settings">

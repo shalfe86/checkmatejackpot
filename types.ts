@@ -57,3 +57,39 @@ export interface PayoutScheduleItem {
   installment_number: number;
   total_installments: number;
 }
+
+// --- New Types for Ledger & Auditing ---
+
+export interface CreditTransaction {
+  id: string;
+  user_id: string;
+  amount: number;
+  type: 'purchase' | 'game_entry' | 'payout' | 'admin_adjustment' | 'refund';
+  description?: string;
+  created_at: string;
+  game_id?: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  admin_id: string;
+  action: string;
+  target_id?: string;
+  target_table?: string;
+  details?: any;
+  created_at: string;
+  // joined fields
+  admin_email?: string;
+}
+
+export interface GameFlag {
+  id: string;
+  game_id: string;
+  user_id: string;
+  reason: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+  admin_notes?: string;
+  created_at: string;
+  resolved_at?: string;
+  resolved_by?: string;
+}

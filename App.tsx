@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -13,6 +12,9 @@ import { Auth } from './pages/Auth';
 import { AdminLayout } from './app/admin/layout';
 import { WinnersPage } from './app/admin/winners/page';
 import { AdminDashboard } from './app/admin/dashboard/page';
+import { UsersPage } from './app/admin/users/page';
+import { SettingsPage } from './app/admin/settings/page';
+import { AuditPage } from './app/admin/audit/page';
 
 function App() {
   // Simple check to exclude Navbar/Footer on admin pages if desired, 
@@ -39,6 +41,9 @@ function App() {
            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
            <Route path="/admin/dashboard" element={<AdminRouteWrapper><AdminDashboard /></AdminRouteWrapper>} />
            <Route path="/admin/winners" element={<AdminRouteWrapper><WinnersPage /></AdminRouteWrapper>} />
+           <Route path="/admin/users" element={<AdminRouteWrapper><UsersPage /></AdminRouteWrapper>} />
+           <Route path="/admin/audit" element={<AdminRouteWrapper><AuditPage /></AdminRouteWrapper>} />
+           <Route path="/admin/settings" element={<AdminRouteWrapper><SettingsPage /></AdminRouteWrapper>} />
            
            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
