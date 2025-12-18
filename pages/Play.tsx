@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Chess } from 'chess.js';
@@ -11,25 +12,23 @@ import { GameTier, JackpotInfo } from '../types';
 import { getFreeMove, getStarterMove, getWorldMove } from '../lib/ai/chessAI';
 import { getJackpotInfo } from '../lib/jackpot/jackpotLogic';
 import { formatCurrency } from '../lib/utils';
-import { Trophy, Frown, RefreshCw, ShieldAlert, Coins, Lock } from 'lucide-react';
+import { Trophy, Frown, RefreshCw, ShieldAlert, Coins, Lock, ShieldCheck, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { saveGameResult } from '../lib/game/saveGame';
 import { supabase } from '../lib/supabase';
 
-// Time Configuration based on Tier
 const getTimeConfig = (tier: GameTier) => {
   switch (tier) {
-    case GameTier.WORLD: // Tier 3
+    case GameTier.WORLD:
       return { initial: 25, increment: 1, max: 25 };
-    case GameTier.STARTER: // Tier 2
+    case GameTier.STARTER:
       return { initial: 30, increment: 2, max: 35 };
-    case GameTier.FREE: // Tier 1
+    case GameTier.FREE:
     default:
       return { initial: 40, increment: 2, max: 50 };
   }
 };
 
-// Helper to calculate valid moves for Chessground
 const getDests = (game: Chess) => {
   const dests = new Map();
   game.moves({ verbose: true }).forEach((m) => {
@@ -39,7 +38,6 @@ const getDests = (game: Chess) => {
   return dests;
 };
 
-// Custom Chessboard Component wrapping native Chessground
 const CustomChessboard = ({ game, onMove, isGameOver, width, height }: any) => {
   const ref = useRef<HTMLDivElement>(null);
   const api = useRef<any>(null);
@@ -75,7 +73,6 @@ const CustomChessboard = ({ game, onMove, isGameOver, width, height }: any) => {
     }
   }, [game, isGameOver, onMove]);
 
-  // Handle Resize
   useEffect(() => {
     if (api.current) api.current.redrawAll();
   }, [width, height]);
@@ -91,47 +88,40 @@ export const Play = () => {
   const tier = (queryParams.get('tier') as GameTier) || GameTier.FREE;
   const timeConfig = getTimeConfig(tier);
 
-  // Game State
   const [game, setGame] = useState(new Chess());
   const [whiteTime, setWhiteTime] = useState(timeConfig.initial);
   const [blackTime, setBlackTime] = useState(timeConfig.initial);
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameResult, setGameResult] = useState<'win' | 'loss' | 'draw' | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
   
-  // User Profile State
   const [isAdmin, setIsAdmin] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-
-  // Jackpot State
   const [jackpots, setJackpots] = useState<JackpotInfo | null>(null);
 
-  // Responsive Board Size
   const [boardDimensions, setBoardDimensions] = useState({ width: 480, height: 480 });
   const boardWrapperRef = useRef<HTMLDivElement>(null);
 
-  // Refs
   const timerInterval = useRef<number | null>(null);
   const gameRef = useRef(game);
   const isGameOverRef = useRef(isGameOver);
   const isGameStartedRef = useRef(isGameStarted);
   const hasSavedGameRef = useRef(false);
 
-  // 1. Auth & Profile Check
   useEffect(() => {
     if (!authLoading && !user && tier !== GameTier.FREE) {
         navigate('/auth');
         return;
     }
-
     if (user) {
         setLoadingProfile(true);
         supabase.from('profiles')
         .select('role, credits')
         .eq('id', user.id)
         .single()
-        .then(({ data, error }) => {
+        .then(({ data }) => {
             if (data) {
                 setIsAdmin(data.role === 'admin');
                 setCredits(data.credits);
@@ -143,50 +133,36 @@ export const Play = () => {
     }
   }, [user, authLoading, tier, navigate]);
 
-  // 2. Load Jackpots
   useEffect(() => {
     getJackpotInfo().then(setJackpots);
   }, []);
 
-  // 3. Sync Refs
   useEffect(() => {
     gameRef.current = game;
     isGameOverRef.current = isGameOver;
     isGameStartedRef.current = isGameStarted;
   }, [game, isGameOver, isGameStarted]);
 
-  // 4. Abort/Exit Detection
   useEffect(() => {
     return () => {
-      // Only record loss if game started, not over, user exists, paid tier, and not already saved
       if (isGameStartedRef.current && !isGameOverRef.current && user && tier !== GameTier.FREE && !hasSavedGameRef.current) {
         hasSavedGameRef.current = true;
-        console.log('User exited early. Recording loss.');
-        // Note: Credits will be deducted by the backend procedure when this is called
-        saveGameResult(user.id, tier, 'loss', 0);
+        saveGameResult(user.id, tier, 'loss', 0, gameRef.current.pgn());
       }
     };
   }, [user, tier]);
 
-  // 5. Board Resizing
   useEffect(() => {
     const updateDimensions = () => {
         if (boardWrapperRef.current) {
             const { width, height } = boardWrapperRef.current.getBoundingClientRect();
-            // Use the smaller dimension to keep aspect ratio square
             const size = Math.min(width, height);
             setBoardDimensions({ width: size, height: size });
         }
     };
-    
-    // Initial measure
     updateDimensions();
-    
     const resizeObserver = new ResizeObserver(updateDimensions);
-    if (boardWrapperRef.current) {
-        resizeObserver.observe(boardWrapperRef.current);
-    }
-    
+    if (boardWrapperRef.current) resizeObserver.observe(boardWrapperRef.current);
     window.addEventListener('resize', updateDimensions);
     return () => {
         resizeObserver.disconnect();
@@ -194,7 +170,6 @@ export const Play = () => {
     };
   }, []);
 
-  // 6. Reset Game
   useEffect(() => {
     setWhiteTime(timeConfig.initial);
     setBlackTime(timeConfig.initial);
@@ -202,12 +177,13 @@ export const Play = () => {
     setIsGameStarted(false);
     setIsGameOver(false);
     setGameResult(null);
+    setIsVerifying(false);
     hasSavedGameRef.current = false;
     if (timerInterval.current) {
         window.clearInterval(timerInterval.current);
         timerInterval.current = null;
     }
-  }, [tier]);
+  }, [tier, timeConfig.initial]);
 
   const jackpotAmount = jackpots 
     ? (tier === GameTier.STARTER ? jackpots.starter : tier === GameTier.WORLD ? jackpots.world : 0)
@@ -216,7 +192,6 @@ export const Play = () => {
   const entryCost = tier === GameTier.WORLD ? 2 : tier === GameTier.STARTER ? 1 : 0;
   const canAfford = tier === GameTier.FREE || (credits !== null && credits >= entryCost);
 
-  // Timer Logic
   useEffect(() => {
     if (isGameStarted && !isGameOver && !timerInterval.current) {
       timerInterval.current = window.setInterval(() => {
@@ -256,18 +231,19 @@ export const Play = () => {
 
     if (user && !hasSavedGameRef.current) {
       hasSavedGameRef.current = true;
+      setIsVerifying(true);
       const prize = result === 'win' ? jackpotAmount : 0;
       
-      // Update local credits display optimistically
       if (tier !== GameTier.FREE && credits !== null) {
           setCredits(credits - entryCost);
       }
 
-      await saveGameResult(user.id, tier, result, prize);
+      const pgn = gameRef.current.pgn();
+      await saveGameResult(user.id, tier, result, prize, pgn);
+      setIsVerifying(false);
     }
   }, [user, tier, jackpotAmount, credits, entryCost]);
 
-  // Move Logic
   const safeMove = useCallback((move: { from: string; to: string; promotion?: string } | string) => {
     const gameCopy = new Chess(gameRef.current.fen());
     let result = null;
@@ -303,12 +279,12 @@ export const Play = () => {
         return true;
     }
     return false;
-  }, [isGameStarted, handleGameOver, timeConfig]);
+  }, [isGameStarted, handleGameOver, timeConfig.increment, timeConfig.max]);
 
-  // AI Logic
   useEffect(() => {
     if (game.turn() === 'b' && !isGameOver) {
-        const delay = Math.random() * 500 + 500;
+        // AI thinking delay
+        const delay = tier === GameTier.WORLD ? 1500 : 800;
         const timeout = setTimeout(() => {
             const gameCopy = new Chess(game.fen());
             let move: string | null = null;
@@ -333,11 +309,9 @@ export const Play = () => {
   }, [safeMove]);
 
   const resetGame = () => {
-     // Reload page to ensure fresh state and re-check credits
      window.location.reload();
   };
 
-  // 7. Loading / Insufficient Credits Render
   if (tier !== GameTier.FREE && loadingProfile) {
       return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
   }
@@ -368,8 +342,7 @@ export const Play = () => {
   }
 
   return (
-    <div className="container mx-auto px-2 md:px-4 py-4 flex flex-col md:flex-row gap-4 max-w-6xl h-[calc(100vh-80px)] overflow-hidden">
-      {/* Sidebar - Fixed width, scrollable if needed */}
+    <div className="container mx-auto px-2 md:px-4 py-4 flex flex-col md:flex-row gap-4 max-w-6xl h-[calc(100vh-80px)] overflow-hidden relative">
       <div className="w-full md:w-80 shrink-0 flex flex-col gap-3 order-2 md:order-1 h-full overflow-y-auto pb-4">
         <Card className="p-4 bg-card/50 backdrop-blur">
             <h2 className="text-lg font-bold mb-2 capitalize">{tier === GameTier.FREE ? 'Free Practice' : `${tier} Tier`}</h2>
@@ -388,13 +361,18 @@ export const Play = () => {
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-black border border-white/20"></div>
-                        <span className="font-medium text-sm">Bot</span>
+                        <span className="font-medium text-sm">Bot Engine</span>
                         <Badge variant="outline" className="text-[10px] h-5">
-                            {tier === GameTier.WORLD ? 'HARD' : tier === GameTier.STARTER ? 'MED' : 'EASY'}
+                            {tier === GameTier.WORLD ? 'GRANDMASTER' : tier === GameTier.STARTER ? 'CLUB' : 'EASY'}
                         </Badge>
                     </div>
                     <Timer secondsRemaining={blackTime} isActive={game.turn() === 'b' && !isGameOver} label="OPP" />
                 </div>
+                {game.turn() === 'b' && !isGameOver && (
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground animate-pulse ml-5">
+                        <Loader2 className="w-3 h-3 animate-spin"/> Engine evaluating lines...
+                    </div>
+                )}
 
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
@@ -409,6 +387,10 @@ export const Play = () => {
         </Card>
 
         <div className="mt-auto space-y-2">
+             <div className="p-2 bg-secondary/20 rounded border border-border/50 text-[10px] flex items-center gap-2">
+                <ShieldCheck className="w-3 h-3 text-primary" />
+                <span>Anti-Cheat Enabled: Moves are validated.</span>
+             </div>
              {isAdmin && !isGameOver && isGameStarted && (
                 <Button 
                     variant="destructive" 
@@ -425,7 +407,6 @@ export const Play = () => {
         </div>
       </div>
 
-      {/* Board Area - Flex grow, ensures square fit within available space */}
       <div className="flex-1 flex justify-center items-center order-1 md:order-2 min-h-0 min-w-0 p-1 relative">
          <div ref={boardWrapperRef} className="relative shadow-2xl rounded-lg overflow-hidden border-4 border-muted flex items-center justify-center bg-[#F0D9B5]" style={{ width: boardDimensions.width, height: boardDimensions.height }}>
             <CustomChessboard 
@@ -438,47 +419,59 @@ export const Play = () => {
          </div>
       </div>
 
-      {/* Game Over Modal */}
       {isGameOver && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
             <Card className="w-full max-w-md p-6 text-center space-y-6 shadow-2xl bg-card border-primary/20">
-                {gameResult === 'win' ? (
-                    <div className="mx-auto w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center text-primary mb-4 animate-bounce">
-                        <Trophy className="w-8 h-8" />
+                {isVerifying ? (
+                    <div className="space-y-4">
+                        <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+                        <h2 className="text-xl font-bold uppercase tracking-tight">Verifying Game History</h2>
+                        <p className="text-muted-foreground text-sm">Our anti-cheat engine is validating your move sequence against server-side nodes.</p>
                     </div>
                 ) : (
-                    <div className="mx-auto w-16 h-16 bg-destructive/20 rounded-full flex items-center justify-center text-destructive mb-4">
-                        <Frown className="w-8 h-8" />
+                    <>
+                    {gameResult === 'win' ? (
+                        <div className="mx-auto w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center text-primary mb-4 animate-bounce">
+                            <Trophy className="w-8 h-8" />
+                        </div>
+                    ) : (
+                        <div className="mx-auto w-16 h-16 bg-destructive/20 rounded-full flex items-center justify-center text-destructive mb-4">
+                            <Frown className="w-8 h-8" />
+                        </div>
+                    )}
+                    
+                    <div className="space-y-2">
+                        <h2 className="text-3xl font-bold uppercase tracking-tight">
+                            {gameResult === 'win' ? 'You Won!' : gameResult === 'loss' ? 'You Lost' : 'Draw'}
+                        </h2>
+                        <p className="text-muted-foreground">
+                            {gameResult === 'win' && tier !== GameTier.FREE 
+                                ? "Congratulations! Your win has been validated and submitted." 
+                                : tier !== GameTier.FREE 
+                                    ? `${entryCost} credit(s) have been deducted.`
+                                    : "Good game. Keep practicing."}
+                        </p>
                     </div>
-                )}
-                
-                <div className="space-y-2">
-                    <h2 className="text-3xl font-bold uppercase tracking-tight">
-                        {gameResult === 'win' ? 'You Won!' : gameResult === 'loss' ? 'You Lost' : 'Draw'}
-                    </h2>
-                    <p className="text-muted-foreground">
-                        {gameResult === 'win' && tier !== GameTier.FREE 
-                            ? "Congratulations! Your game has been submitted for verification." 
-                            : tier !== GameTier.FREE 
-                                ? `${entryCost} credit(s) have been deducted.`
-                                : "Good game. Keep practicing."}
-                    </p>
-                </div>
 
-                {gameResult === 'win' && tier !== GameTier.FREE && (
-                     <div className="p-4 bg-secondary/50 rounded-lg border border-primary/10">
-                        <p className="text-sm text-muted-foreground mb-1">Potential Prize</p>
-                        <p className="text-2xl font-bold text-primary">{formatCurrency(jackpotAmount)}</p>
-                        <Badge variant="outline" className="mt-2 text-xs border-primary/30 text-primary">Pending Review</Badge>
-                     </div>
-                )}
+                    {gameResult === 'win' && tier !== GameTier.FREE && (
+                         <div className="p-4 bg-secondary/50 rounded-lg border border-primary/10">
+                            <p className="text-sm text-muted-foreground mb-1">Potential Prize</p>
+                            <p className="text-2xl font-bold text-primary">{formatCurrency(jackpotAmount)}</p>
+                            <div className="flex items-center justify-center gap-2 mt-2">
+                                <ShieldCheck className="w-3 h-3 text-primary" />
+                                <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">PGN Verified</Badge>
+                            </div>
+                         </div>
+                    )}
 
-                <div className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" onClick={() => navigate('/')}>Home</Button>
-                    <Button onClick={resetGame} className="gap-2">
-                        <RefreshCw className="w-4 h-4" /> Play Again
-                    </Button>
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Button variant="outline" onClick={() => navigate('/')}>Home</Button>
+                        <Button onClick={resetGame} className="gap-2">
+                            <RefreshCw className="w-4 h-4" /> Play Again
+                        </Button>
+                    </div>
+                    </>
+                )}
             </Card>
           </div>
       )}

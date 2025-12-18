@@ -10,7 +10,7 @@ export interface User {
   name: string;
   email: string;
   credits: number;
-  monthlyWins: number; // For Starter tier eligibility
+  monthlyWins: number;
   role?: 'user' | 'admin';
 }
 
@@ -20,6 +20,7 @@ export interface GameResult {
   tier: GameTier;
   result: 'win' | 'loss' | 'draw';
   prize?: number;
+  pgn: string; // Added for server-side move validation
 }
 
 export interface JackpotInfo {
@@ -40,12 +41,13 @@ export interface Winner {
   status: PayoutStatus;
   payout_type: PayoutType;
   full_name?: string;
-  email?: string; // Joined from profiles
-  username?: string; // Joined from profiles
+  email?: string;
+  username?: string;
   country?: string;
   created_at: string;
   notes?: string;
   kyc_status?: 'pending' | 'verified' | 'rejected';
+  pgn?: string; // Move history stored for audit
 }
 
 export interface PayoutScheduleItem {
@@ -57,8 +59,6 @@ export interface PayoutScheduleItem {
   installment_number: number;
   total_installments: number;
 }
-
-// --- New Types for Ledger & Auditing ---
 
 export interface CreditTransaction {
   id: string;
@@ -78,7 +78,6 @@ export interface AuditLogEntry {
   target_table?: string;
   details?: any;
   created_at: string;
-  // joined fields
   admin_email?: string;
 }
 

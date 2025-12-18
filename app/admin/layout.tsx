@@ -8,7 +8,8 @@ import { AdminSidebar } from '../../components/admin/AdminSidebar';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
-export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
+// Fixed: Set children as optional to avoid TS error in App.tsx
+export const AdminLayout = ({ children }: { children?: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = React.useState(false);

@@ -1,3 +1,4 @@
+
 import { supabase } from '../supabase';
 import { GameTier } from '../../types';
 
@@ -5,18 +6,18 @@ export const saveGameResult = async (
   userId: string,
   tier: GameTier,
   result: 'win' | 'loss' | 'draw',
-  prize: number = 0
+  prize: number = 0,
+  pgn: string = ''
 ) => {
   try {
-    // We use a Remote Procedure Call (RPC) to 'submit_game'.
-    // This SQL function (defined in Supabase) handles:
-    // 1. Inserting the game into the 'games' table
-    // 2. Automatically updating the 'jackpots' table (reset on win, increment on loss)
+    // We pass the full PGN to the database. 
+    // The 'submit_game' RPC should verify the PGN against a chess engine in a real production env.
     const { data, error } = await supabase.rpc('submit_game', {
       p_user_id: userId,
       p_tier: tier,
       p_result: result,
-      p_prize: prize
+      p_prize: prize,
+      p_pgn: pgn 
     });
 
     if (error) throw error;

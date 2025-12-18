@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../../components/ui/table';
 import { Button } from '../../../components/ui/button';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, Database } from 'lucide-react';
 import { AuditLogEntry } from '../../../types';
 
 export const AuditPage = () => {
@@ -25,7 +25,13 @@ export const AuditPage = () => {
         // Fetch admin emails manually to avoid complex joins on client side if easy
         const adminIds = Array.from(new Set(data?.map(l => l.admin_id).filter(Boolean)));
         if (adminIds.length > 0) {
-             const { data: profiles } = await supabase.from('profiles').select('id, email').in('id', adminIds);
+             const { data: profiles, error: profileError } = await supabase.from('profiles').select('id, email').in('id', adminIds);
+             
+             // If profiles fail to load, we just proceed without them rather than breaking the whole page
+             if (profileError) {
+                console.warn('Could not fetch admin profiles for audit logs:', profileError);
+             }
+
              const profileMap = new Map(profiles?.map(p => [p.id, p.email]));
              
              const enrichedLogs = data?.map(log => ({
@@ -39,7 +45,9 @@ export const AuditPage = () => {
 
     } catch (err: any) {
         console.error('Error fetching logs:', err);
-        setError(err.message);
+        // Robustly handle error message extraction to avoid [object Object]
+        const msg = err.message || (typeof err === 'string' ? err : JSON.stringify(err));
+        setError(msg);
     } finally {
         setLoading(false);
     }
@@ -48,6 +56,45 @@ export const AuditPage = () => {
   useEffect(() => {
     fetchLogs();
   }, []);
+
+  if (error) {
+     const isTableMissing = error.toLowerCase().includes('does not exist') || error.toLowerCase().includes('relation');
+     return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Audit Logs</h1>
+                    <p className="text-muted-foreground">Security log of all administrative actions.</p>
+                </div>
+            </div>
+            
+            <div className="p-8 text-center border border-destructive/20 bg-destructive/5 rounded-lg max-w-2xl mx-auto">
+                {isTableMissing ? (
+                    <>
+                        <Database className="w-12 h-12 text-destructive mx-auto mb-4" />
+                        <h3 className="font-bold text-xl text-destructive mb-2">Table Missing</h3>
+                        <p className="text-muted-foreground mb-4">
+                            The <code>audit_logs</code> table does not exist in your database.
+                        </p>
+                        <div className="bg-background p-4 rounded text-left text-xs font-mono border border-border overflow-auto max-h-40 mb-4 mx-auto max-w-md">
+                            <p className="text-muted-foreground">
+                                Please run the migration SQL to create the table.
+                            </p>
+                        </div>
+                        <Button onClick={fetchLogs} variant="outline">Retry</Button>
+                    </>
+                ) : (
+                    <>
+                        <AlertCircle className="w-8 h-8 text-destructive mx-auto mb-2" />
+                        <h3 className="font-bold text-destructive">Error Loading Logs</h3>
+                        <p className="text-muted-foreground mb-4 break-all">{error}</p>
+                        <Button onClick={fetchLogs} variant="outline">Retry</Button>
+                    </>
+                )}
+            </div>
+        </div>
+     );
+  }
 
   return (
     <div className="space-y-6">
@@ -58,13 +105,6 @@ export const AuditPage = () => {
         </div>
         <Button variant="outline" onClick={fetchLogs}><RefreshCw className="w-4 h-4 mr-2"/> Refresh</Button>
       </div>
-
-      {error && (
-        <div className="p-4 border border-destructive/20 bg-destructive/5 rounded-lg flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-destructive" />
-            <span className="text-sm text-destructive">{error}</span>
-        </div>
-      )}
 
       <div className="border rounded-lg bg-card shadow-sm overflow-hidden">
         <Table>

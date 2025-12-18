@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -16,15 +17,14 @@ import { UsersPage } from './app/admin/users/page';
 import { SettingsPage } from './app/admin/settings/page';
 import { AuditPage } from './app/admin/audit/page';
 
-function App() {
-  // Simple check to exclude Navbar/Footer on admin pages if desired, 
-  // but for simplicity we keep them or let the AdminLayout handle full screen
-  const AdminRouteWrapper = ({ children }: { children: React.ReactNode }) => (
-    <div className="bg-background min-h-screen text-foreground font-sans">
-       <AdminLayout>{children}</AdminLayout>
-    </div>
-  );
+// Fixed: Moved AdminRouteWrapper outside and made children optional to satisfy TypeScript JSX checks
+const AdminRouteWrapper = ({ children }: { children?: React.ReactNode }) => (
+  <div className="bg-background min-h-screen text-foreground font-sans">
+     <AdminLayout>{children}</AdminLayout>
+  </div>
+);
 
+function App() {
   return (
     <AuthProvider>
       <Router>
