@@ -29,6 +29,13 @@ const getPieceValue = (piece: any, x: number, y: number) => {
 };
 
 const evaluateBoard = (game: Chess) => {
+  // Check for terminal states first to prioritize wins/draws correctly
+  if (game.isCheckmate()) {
+    // If it's black's turn and they are in checkmate, white won (bad for AI)
+    return game.turn() === 'b' ? -1000000 : 1000000;
+  }
+  if (game.isDraw()) return 0;
+
   let totalEvaluation = 0;
   const board = game.board();
   for (let i = 0; i < 8; i++) {
@@ -39,46 +46,94 @@ const evaluateBoard = (game: Chess) => {
   return totalEvaluation;
 };
 
-const minimax = (game: Chess, depth: number, alpha: number, beta: number, isMaximizing: boolean): number => {
-  if (depth === 0) return evaluateBoard(game);
+const minimax = (game: Chess, depth: number, alpha: number, beta: number, isMaximizing: boolean, deadline: number): number => {
+  // Check for terminal state or depth 0 or time limit exceeded
+  if (depth === 0 || game.isGameOver() || Date.now() > deadline) {
+    return evaluateBoard(game);
+  }
+
   const moves = game.moves();
   if (isMaximizing) {
     let best = -Infinity;
     for (const move of moves) {
       game.move(move);
-      best = Math.max(best, minimax(game, depth - 1, alpha, beta, false));
+      best = Math.max(best, minimax(game, depth - 1, alpha, beta, false, deadline));
       game.undo();
       alpha = Math.max(alpha, best);
       if (beta <= alpha) break;
+      if (Date.now() > deadline) break;
     }
     return best;
   } else {
     let best = Infinity;
     for (const move of moves) {
       game.move(move);
-      best = Math.min(best, minimax(game, depth - 1, alpha, beta, true));
+      best = Math.min(best, minimax(game, depth - 1, alpha, beta, true, deadline));
       game.undo();
       beta = Math.min(beta, best);
       if (beta <= alpha) break;
+      if (Date.now() > deadline) break;
     }
     return best;
   }
 };
 
-const getBestMove = (game: Chess, depth: number) => {
+/**
+ * AI MOVE GENERATION with ITERATIVE DEEPENING and TIME LIMIT
+ */
+const getBestMoveTimeLimit = (game: Chess, timeLimitMs: number) => {
+  const startTime = Date.now();
+  const deadline = startTime + timeLimitMs;
   const moves = game.moves();
-  let bestValue = -Infinity;
-  let bestMove = null;
-  for (const move of moves) {
-    game.move(move);
-    const val = minimax(game, depth - 1, -Infinity, Infinity, false);
-    game.undo();
-    if (val > bestValue) {
-      bestValue = val;
-      bestMove = move;
+  
+  if (moves.length === 0) return null;
+
+  // Initialize with a random valid move just in case we time out immediately
+  let bestMoveOverall = moves[Math.floor(Math.random() * moves.length)];
+  let currentDepth = 1;
+
+  // Iterative Deepening
+  while (true) {
+    if (Date.now() >= deadline) break;
+    
+    let bestValue = -Infinity;
+    let depthBestMoves: string[] = [];
+    let timedOut = false;
+
+    // Sorting moves by evaluating them at depth 0 might improve alpha-beta pruning efficiency
+    // but here we keep it simple and just iterate through the moves.
+    for (const move of moves) {
+      if (Date.now() >= deadline) {
+        timedOut = true;
+        break;
+      }
+
+      game.move(move);
+      // We are finding best move for BLACK (the maximizing player in our evaluateBoard)
+      const val = minimax(game, currentDepth - 1, -Infinity, Infinity, false, deadline);
+      game.undo();
+
+      if (val > bestValue) {
+        bestValue = val;
+        depthBestMoves = [move];
+      } else if (val === bestValue) {
+        depthBestMoves.push(move);
+      }
+    }
+
+    if (!timedOut && depthBestMoves.length > 0) {
+      // Pick one random move from the set of best-scoring moves at this depth
+      bestMoveOverall = depthBestMoves[Math.floor(Math.random() * depthBestMoves.length)];
+      currentDepth++;
+      
+      // Safety break: Don't exceed depth 6 as it becomes too slow even with iterative deepening
+      if (currentDepth > 6) break;
+    } else {
+      break; // Stop if search at this depth timed out or failed
     }
   }
-  return bestMove;
+
+  return bestMoveOverall;
 };
 
 serve(async (req) => {
@@ -114,8 +169,9 @@ serve(async (req) => {
     // 3. AI Move Generation (If not over)
     let aiMove = null;
     if (!chess.isGameOver()) {
-      const depth = dbGame.tier === 'world' ? 4 : dbGame.tier === 'starter' ? 3 : 2;
-      aiMove = getBestMove(chess, depth);
+      // Dynamic time limit based on tier
+      const timeLimit = dbGame.tier === 'world' ? 2000 : dbGame.tier === 'starter' ? 1000 : 500;
+      aiMove = getBestMoveTimeLimit(chess, timeLimit);
       if (aiMove) chess.move(aiMove);
     }
 
