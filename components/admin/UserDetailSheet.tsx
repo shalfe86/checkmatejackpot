@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '../ui/sheet';
 import { Button } from '../ui/button';
@@ -207,7 +208,7 @@ export const UserDetailSheet = ({ user, open, onOpenChange, onUpdate }: Props) =
                                      <div className="flex items-center gap-2">
                                          {t.amount > 0 ? <ArrowUpRight className="w-3 h-3 text-green-500" /> : <ArrowDownLeft className="w-3 h-3 text-red-500" />}
                                          <div>
-                                             <p className="font-medium capitalize">{t.type.replace('_', ' ')}</p>
+                                             <p className="font-medium capitalize">{t.type?.replace('_', ' ')}</p>
                                              <p className="text-[10px] text-muted-foreground">{new Date(t.created_at).toLocaleDateString()}</p>
                                          </div>
                                      </div>

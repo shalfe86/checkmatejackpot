@@ -85,7 +85,7 @@ export const WinnerDetailSheet = ({ winner, open, onOpenChange, onUpdate }: Prop
                 <SheetTitle>Winner Details</SheetTitle>
                 <SheetDescription>Case ID: {winner.id.slice(0, 8)}</SheetDescription>
             </div>
-            <Badge variant={winner.tier === 'world' ? 'gold' : 'secondary'}>{winner.tier.toUpperCase()}</Badge>
+            <Badge variant={winner.tier === 'world' ? 'gold' : 'secondary'}>{winner.tier?.toUpperCase()}</Badge>
           </div>
         </SheetHeader>
 
@@ -104,12 +104,12 @@ export const WinnerDetailSheet = ({ winner, open, onOpenChange, onUpdate }: Prop
                 <div className="space-y-1">
                     <label className="text-xs text-muted-foreground uppercase font-bold">Current Status</label>
                     <Badge variant={winner.status === 'paid' ? 'default' : winner.status === 'flagged' ? 'destructive' : 'outline'}>
-                        {winner.status.replace('_', ' ').toUpperCase()}
+                        {winner.status?.replace('_', ' ').toUpperCase()}
                     </Badge>
                 </div>
                  <div className="space-y-1">
                     <label className="text-xs text-muted-foreground uppercase font-bold">Payout Preference</label>
-                    <p className="text-sm capitalize">{winner.payout_type.replace('_', ' ')}</p>
+                    <p className="text-sm capitalize">{winner.payout_type?.replace('_', ' ')}</p>
                 </div>
             </div>
 

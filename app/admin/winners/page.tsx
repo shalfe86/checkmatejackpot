@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Winner, GameTier } from '../../../types';
@@ -160,7 +161,7 @@ export const WinnersPage = () => {
                                 {formatCurrency(winner.amount)}
                             </TableCell>
                             <TableCell className="capitalize text-sm">
-                                {winner.payout_type.replace('_', ' ')}
+                                {winner.payout_type?.replace('_', ' ')}
                             </TableCell>
                             <TableCell>
                                 <Badge variant={
@@ -168,7 +169,7 @@ export const WinnersPage = () => {
                                     winner.status === 'flagged' ? 'destructive' : 
                                     winner.status === 'scheduled' ? 'outline' : 'secondary'
                                 }>
-                                    {winner.status.replace('_', ' ')}
+                                    {winner.status?.replace('_', ' ')}
                                 </Badge>
                             </TableCell>
                             <TableCell className="text-muted-foreground text-xs">

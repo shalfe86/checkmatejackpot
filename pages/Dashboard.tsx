@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../components/ui/card';
@@ -262,7 +263,7 @@ export const Dashboard = () => {
                             </div>
                             <div className="text-right">
                                 <Badge variant={game.result === 'win' ? 'gold' : 'secondary'} className="mb-1">
-                                  {game.result.toUpperCase()}
+                                  {game.result?.toUpperCase()}
                                 </Badge>
                                 {game.prize > 0 && <p className="text-xs text-green-500 font-bold">+{formatCurrency(game.prize)}</p>}
                             </div>
