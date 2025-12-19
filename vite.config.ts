@@ -3,26 +3,21 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
+    // Load env file based on `mode` in the current working directory.
+    const env = loadEnv(mode, process.cwd(), '');
+    
     return {
-      // --------------------------------------------------------
-      // CRITICAL: This was missing in your latest file!
-      // --------------------------------------------------------
-      base: '/checkmatejackpot/',
-
-      server: {
-        port: 3000,
-        host: '0.0.0.0',
-      },
+      // CRITICAL: Matches your repository name
+      base: '/checkmatejackpot/', 
+      
       plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
       resolve: {
         alias: {
-          '@': path.resolve(__dirname, '.'),
-        }
+          '@': path.resolve(__dirname, './src'),
+        },
+      },
+      server: {
+        host: true, // Needed for Codespaces to forward the port
       }
     };
 });
