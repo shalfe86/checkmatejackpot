@@ -9,6 +9,7 @@ import { Badge } from '../components/ui/badge';
 import { Timer } from '../components/Timer';
 import { GameTier, JackpotInfo } from '../types';
 import { getJackpotInfo } from '../lib/jackpot/jackpotLogic';
+import { getFreeMove, getStarterMove, getWorldMove } from '../lib/ai/chessAI';
 import { formatCurrency } from '../lib/utils';
 import { Trophy, Frown, RefreshCw, ShieldAlert, Coins, Lock, ShieldCheck, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -118,23 +119,48 @@ export const Play = () => {
 
   const handleMove = async (from: string, to: string) => {
     if (isProcessing || isGameOver) return;
-    
+
     setIsProcessing(true);
     const movePayload = { from, to, promotion: 'q' };
 
+    // Validate move is legal before applying optimistically
+    const legalMoves = game.moves({ verbose: true });
+    const isLegal = legalMoves.some(m => m.from === from && m.to === to);
+    if (!isLegal) {
+      console.warn('Attempted illegal move', { movePayload, fen: game.fen(), legalMoves });
+      setIsProcessing(false);
+      // rollback UI just in case
+      api.current?.set({ fen: game.fen(), dests: getDests(game) });
+      return;
+    }
+
     // Optimistic local update
     const nextGame = new Chess(game.fen());
-    nextGame.move(movePayload);
+    const result = nextGame.move(movePayload as any);
+    if (!result) {
+      console.warn('Chess.js rejected move', movePayload);
+      setIsProcessing(false);
+      return;
+    }
     setGame(nextGame);
 
     // authorative validation (Jackpot Tiers)
     if (tier !== GameTier.FREE && gameId) {
       try {
+        console.log('Submitting move to referee', { game_id: gameId, move: movePayload, localFen: nextGame.fen() });
         const { data, error } = await supabase.functions.invoke('submit-move', {
           body: { game_id: gameId, move: movePayload }
         });
 
-        if (error || data.error) throw new Error(data.error || "Server error");
+        console.log('Referee response', { data, error });
+
+        if (error || data.error) {
+          console.error('Referee rejected move', error || data.error);
+          // Rollback on mismatch
+          setGame(new Chess(gameRef.current.fen()));
+          setIsProcessing(false);
+          return;
+        }
 
         const updatedGame = new Chess(data.fen);
         setGame(updatedGame);
@@ -143,15 +169,37 @@ export const Play = () => {
           setGameResult(data.result);
         }
       } catch (e: any) {
-        console.error("Referee Rejected Move:", e.message);
+        console.error("Referee Rejected Move (exception):", e.message || e);
         // Rollback on mismatch
         setGame(new Chess(gameRef.current.fen()));
+        setIsProcessing(false);
+        return;
       }
     } else {
-      // Local play logic for Free Tier
-      // (Simplified: AI logic would still run locally for Free Tier here)
-      setTimeout(() => setIsProcessing(false), 500);
+      // Local play logic for Free Tier (or when no server available)
+      try {
+        const aiGame = new Chess(nextGame.fen());
+        let aiMove: string | null = null;
+        if (tier === GameTier.FREE) aiMove = getFreeMove(aiGame);
+        else if (tier === GameTier.STARTER) aiMove = getStarterMove(aiGame);
+        else if (tier === GameTier.WORLD) aiMove = getWorldMove(aiGame);
+
+        if (aiMove) {
+          // small delay to simulate thinking
+          setTimeout(() => {
+            aiGame.move(aiMove as any);
+            setGame(aiGame);
+            setIsProcessing(false);
+          }, 350);
+        } else {
+          setTimeout(() => setIsProcessing(false), 200);
+        }
+      } catch (e) {
+        console.error('Local AI failed', e);
+        setTimeout(() => setIsProcessing(false), 200);
+      }
     }
+    // ensure processing flag cleared (some branches clear it earlier)
     setIsProcessing(false);
   };
 

@@ -11,10 +11,10 @@ import { supabase } from '../lib/supabase';
 export const Home = () => {
   const navigate = useNavigate();
   const [jackpots, setJackpots] = useState<JackpotInfo | null>(null);
-  const [displayJackpot, setDisplayJackpot] = useState(1248900);
+  const [displayJackpot, setDisplayJackpot] = useState<number | null>(null);
   const [stats, setStats] = useState({
-    winners: 12847,
-    gamesToday: 3421
+    winners: 0,
+    gamesToday: 0
   });
 
   useEffect(() => {
@@ -57,22 +57,15 @@ export const Home = () => {
           filter: `tier=eq.world`
         },
         (payload) => {
-          const newAmount = payload.new.amount;
-          // When a real update happens, we update the state
-          setDisplayJackpot(newAmount);
+          const newAmount = payload.new?.amount;
+          if (typeof newAmount === 'number') setDisplayJackpot(newAmount);
+          else if (newAmount != null) setDisplayJackpot(Number(newAmount));
         }
       )
       .subscribe();
 
-    // Simulate "Live Inputs" that go up $1 at a time every few seconds if no real activity
-    // To match the request: "it should follow the live inputs, that will go up 1 dollar at a time."
-    const mockLiveInput = setInterval(() => {
-      setDisplayJackpot(prev => prev + 1);
-    }, 4500);
-
     return () => {
       supabase.removeChannel(channel);
-      clearInterval(mockLiveInput);
     };
   }, []);
 
