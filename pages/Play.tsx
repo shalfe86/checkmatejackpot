@@ -56,8 +56,7 @@ export const Play = () => {
         .insert([{ 
           user_id: user?.id, 
           tier, 
-          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-          status: 'active' 
+          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 
         }])
         .select()
         .single();
