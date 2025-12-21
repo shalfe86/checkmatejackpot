@@ -1,21 +1,21 @@
 
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { Navbar } from './components/Navbar';
-import { Footer } from './components/Footer';
-import { Home } from './pages/Home';
-import { Dashboard } from './pages/Dashboard';
-import { Play } from './pages/Play';
-import { Rules } from './pages/Rules';
-import { Terms } from './pages/Terms';
-import { Auth } from './pages/Auth';
-import { AdminLayout } from './app/admin/layout';
-import { WinnersPage } from './app/admin/winners/page';
-import { AdminDashboard } from './app/admin/dashboard/page';
-import { UsersPage } from './app/admin/users/page';
-import { SettingsPage } from './app/admin/settings/page';
-import { AuditPage } from './app/admin/audit/page';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
+import { Home } from '@/pages/Home';
+import { Dashboard } from '@/pages/Dashboard';
+import { Play } from '@/pages/Play';
+import { Rules } from '@/pages/Rules';
+import { Terms } from '@/pages/Terms';
+import { Auth } from '@/pages/Auth';
+import { AdminLayout } from '@/app/admin/layout';
+import { WinnersPage } from '@/app/admin/winners/page';
+import { AdminDashboard } from '@/app/admin/dashboard/page';
+import { UsersPage } from '@/app/admin/users/page';
+import { SettingsPage } from '@/app/admin/settings/page';
+import { AuditPage } from '@/app/admin/audit/page';
 
 // Fixed: Moved AdminRouteWrapper outside and made children optional to satisfy TypeScript JSX checks
 const AdminRouteWrapper = ({ children }: { children?: React.ReactNode }) => (
