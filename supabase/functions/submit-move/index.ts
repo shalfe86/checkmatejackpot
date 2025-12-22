@@ -1,6 +1,10 @@
+/// <reference lib="deno.ns" />
+/// <reference lib="deno.unstable" />
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2?target=deno";
-import { Chess } from "chess.js";
+import { Chess } from "https://esm.sh/chess.js@1.0.0-beta.8?target=deno";
+
 
 
 // --- PIECE-SQUARE TABLES (PST) for AI ---
@@ -108,8 +112,8 @@ serve(async (req) => {
   try {
     const { game_id, move } = await req.json();
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SERVICE_ROLE_KEY')!
     );
 
     // 1. Fetch current game state
